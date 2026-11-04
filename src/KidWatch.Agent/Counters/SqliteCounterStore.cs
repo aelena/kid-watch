@@ -3,13 +3,14 @@ using Microsoft.Data.Sqlite;
 namespace KidWatch.Agent.Counters;
 
 /// <summary>
-/// Per-day usage counters (minutes spent per app key). Persisted so a reboot does
-/// not reset the day's tally. Keyed by (key, day); day is a local ISO date.
+/// Per-day usage counters, in seconds (the time engine samples every ~15s, so
+/// whole minutes would lose precision). Persisted so a reboot does not reset the
+/// day's tally. Keyed by (key, day); day is a local ISO date.
 /// </summary>
 public interface ICounterStore
 {
-    int GetMinutes(string key, DateOnly day);
-    void AddMinutes(string key, DateOnly day, int minutes);
+    int GetSeconds(string key, DateOnly day);
+    void AddSeconds(string key, DateOnly day, int seconds);
     /// <summary>Housekeeping: drop rows for days strictly before <paramref name="day"/>.</summary>
     void DeleteBefore(DateOnly day);
 }
@@ -34,40 +35,40 @@ public sealed class SqliteCounterStore : ICounterStore, IDisposable
             CREATE TABLE IF NOT EXISTS counters (
                 key     TEXT    NOT NULL,
                 day     TEXT    NOT NULL,
-                minutes INTEGER NOT NULL,
+                seconds INTEGER NOT NULL,
                 PRIMARY KEY (key, day)
             );
             """;
         cmd.ExecuteNonQuery();
     }
 
-    public int GetMinutes(string key, DateOnly day)
+    public int GetSeconds(string key, DateOnly day)
     {
         lock (_gate)
         {
             using var cmd = _conn.CreateCommand();
-            cmd.CommandText = "SELECT minutes FROM counters WHERE key = $k AND day = $d;";
+            cmd.CommandText = "SELECT seconds FROM counters WHERE key = $k AND day = $d;";
             cmd.Parameters.AddWithValue("$k", key);
             cmd.Parameters.AddWithValue("$d", Iso(day));
             var result = cmd.ExecuteScalar();
-            return result is long m ? (int)m : 0;
+            return result is long s ? (int)s : 0;
         }
     }
 
-    public void AddMinutes(string key, DateOnly day, int minutes)
+    public void AddSeconds(string key, DateOnly day, int seconds)
     {
-        if (minutes == 0) return;
+        if (seconds == 0) return;
         lock (_gate)
         {
             using var cmd = _conn.CreateCommand();
             cmd.CommandText =
                 """
-                INSERT INTO counters (key, day, minutes) VALUES ($k, $d, $m)
-                ON CONFLICT (key, day) DO UPDATE SET minutes = minutes + $m;
+                INSERT INTO counters (key, day, seconds) VALUES ($k, $d, $s)
+                ON CONFLICT (key, day) DO UPDATE SET seconds = seconds + $s;
                 """;
             cmd.Parameters.AddWithValue("$k", key);
             cmd.Parameters.AddWithValue("$d", Iso(day));
-            cmd.Parameters.AddWithValue("$m", minutes);
+            cmd.Parameters.AddWithValue("$s", seconds);
             cmd.ExecuteNonQuery();
         }
     }

@@ -12,23 +12,30 @@ in [`specs.md`](specs.md).
 ## Status
 
 **Phase 1 — agent skeleton: done.** Config poller (local file), structured JSONL
-event log, SQLite day-counters, background host. Pure logic (schedule + budget
-engine) is unit-tested.
+event log, SQLite day-counters, background host.
 
-Next: **Phase 2 — the time engine** (enumerate processes, accumulate minutes,
-evaluate the budget engine, warn/kill, reset at midnight). See `specs.md`
-section 10 for the phase plan.
+**Phase 2 — the time engine: done.** Samples running processes every 15s, matches
+them to app rules, accumulates seconds into the counter store, runs the pure
+budget engine, and warns once then kills the process tree at the limit or outside
+the allowed schedule. 30 unit tests; verified live (a scheduled block killed a
+real process and logged it).
+
+Next: **Phase 3 — Azure Storage** (pull config from a blob, upload events as
+append blobs) and a companion user-session tray/toast helper (the service itself
+can't draw UI — see below). See `specs.md` section 10 for the phase plan.
 
 ## Layout
 
 ```
 src/
-  KidWatch.Core/     class lib — config models + YAML parser, schedule logic,
-                     pure BudgetEngine, AgentEvent (JSONL) — no I/O
+  KidWatch.Core/     class lib (no I/O) — config models + YAML parser, schedule
+                     logic, pure BudgetEngine, ProcessMatcher, clock, AgentEvent
   KidWatch.Agent/    .NET 10 Worker Service — config store/poller, JSONL sink,
-                     SQLite counters, background workers, host
+                     SQLite counters, process probe, notifier, TimeEngine +
+                     workers, host
 tests/
-  KidWatch.Core.Tests/   xUnit — schedule, budget, config parser, counter store
+  KidWatch.Core.Tests/   xUnit — schedule, budget, config parser, matcher,
+                         counter store, time engine (with fakes)
 samples/config.sample.yaml   example config (prod pulls this from Azure Storage)
 ```
 

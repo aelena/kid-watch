@@ -13,17 +13,17 @@ public class SqliteCounterStoreTests : IDisposable
         new(new AgentOptions { DataDir = _dir });
 
     [Fact]
-    public void Add_then_get_returns_accumulated_minutes()
+    public void Add_then_get_returns_accumulated_seconds()
     {
         using var store = NewStore();
         var day = new DateOnly(2026, 11, 4);
 
-        Assert.Equal(0, store.GetMinutes("Roblox", day));
+        Assert.Equal(0, store.GetSeconds("Roblox", day));
 
-        store.AddMinutes("Roblox", day, 15);
-        store.AddMinutes("Roblox", day, 5);
+        store.AddSeconds("Roblox", day, 15);
+        store.AddSeconds("Roblox", day, 45);
 
-        Assert.Equal(20, store.GetMinutes("Roblox", day));
+        Assert.Equal(60, store.GetSeconds("Roblox", day));
     }
 
     [Fact]
@@ -33,13 +33,13 @@ public class SqliteCounterStoreTests : IDisposable
         var mon = new DateOnly(2026, 11, 2);
         var tue = new DateOnly(2026, 11, 3);
 
-        store.AddMinutes("Roblox", mon, 30);
-        store.AddMinutes("Browsers", mon, 10);
-        store.AddMinutes("Roblox", tue, 7);
+        store.AddSeconds("Roblox", mon, 1800);
+        store.AddSeconds("Browsers", mon, 600);
+        store.AddSeconds("Roblox", tue, 420);
 
-        Assert.Equal(30, store.GetMinutes("Roblox", mon));
-        Assert.Equal(10, store.GetMinutes("Browsers", mon));
-        Assert.Equal(7, store.GetMinutes("Roblox", tue));
+        Assert.Equal(1800, store.GetSeconds("Roblox", mon));
+        Assert.Equal(600, store.GetSeconds("Browsers", mon));
+        Assert.Equal(420, store.GetSeconds("Roblox", tue));
     }
 
     [Fact]
@@ -49,13 +49,13 @@ public class SqliteCounterStoreTests : IDisposable
         var old = new DateOnly(2026, 10, 1);
         var keep = new DateOnly(2026, 11, 4);
 
-        store.AddMinutes("Roblox", old, 99);
-        store.AddMinutes("Roblox", keep, 11);
+        store.AddSeconds("Roblox", old, 5940);
+        store.AddSeconds("Roblox", keep, 660);
 
         store.DeleteBefore(new DateOnly(2026, 11, 1));
 
-        Assert.Equal(0, store.GetMinutes("Roblox", old));
-        Assert.Equal(11, store.GetMinutes("Roblox", keep));
+        Assert.Equal(0, store.GetSeconds("Roblox", old));
+        Assert.Equal(660, store.GetSeconds("Roblox", keep));
     }
 
     [Fact]
@@ -63,10 +63,10 @@ public class SqliteCounterStoreTests : IDisposable
     {
         var day = new DateOnly(2026, 11, 4);
         using (var store = NewStore())
-            store.AddMinutes("Roblox", day, 42);
+            store.AddSeconds("Roblox", day, 2520);
 
         using var reopened = NewStore();
-        Assert.Equal(42, reopened.GetMinutes("Roblox", day));
+        Assert.Equal(2520, reopened.GetSeconds("Roblox", day));
     }
 
     public void Dispose()
