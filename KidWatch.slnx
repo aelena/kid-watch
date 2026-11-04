@@ -1,0 +1,9 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/KidWatch.Agent/KidWatch.Agent.csproj" />
+    <Project Path="src/KidWatch.Core/KidWatch.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/KidWatch.Core.Tests/KidWatch.Core.Tests.csproj" />
+  </Folder>
+</Solution>

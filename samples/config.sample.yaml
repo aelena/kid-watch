@@ -1,0 +1,46 @@
+# Sample pc-kid-watch config. In production this is pulled from Azure Storage as
+# <device>/config.yaml; in phase-1 dev the agent reads it from a local file
+# (set Agent:ConfigFile, or Agent__ConfigFile as an env var).
+
+device: dev-laptop
+version: 1
+
+poll_minutes: 15
+upload_minutes: 5
+
+timezone: Europe/Madrid
+
+apps:
+  - name: Roblox
+    match: ["RobloxPlayerBeta.exe", "RobloxStudioBeta.exe"]
+    daily_limit_minutes: 90
+    warn_minutes: 10
+    action: kill
+    schedule:
+      mon-fri: ["16:00-19:00"]
+      sat-sun: ["10:00-13:00", "16:00-20:00"]
+
+  - name: Browsers
+    match: ["chrome.exe", "msedge.exe", "firefox.exe"]
+    daily_limit_minutes: 180
+    action: warn
+
+urls:
+  deny: ["*.example-blocked.com"]
+  schedule:
+    - domain: "youtube.com"
+      allow:
+        mon-fri: ["17:00-19:00"]
+        sat-sun: ["10:00-20:00"]
+
+activity:
+  sample_minutes: 2
+  screenshots:
+    enabled: false
+    mode: random
+    interval_minutes: 15
+    random_min_minutes: 10
+    random_max_minutes: 40
+
+azure:
+  logs_sas_ref: "logs"
