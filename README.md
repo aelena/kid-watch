@@ -20,9 +20,18 @@ budget engine, and warns once then kills the process tree at the limit or outsid
 the allowed schedule. 30 unit tests; verified live (a scheduled block killed a
 real process and logged it).
 
-Next: **Phase 3 — Azure Storage** (pull config from a blob, upload events as
-append blobs) and a companion user-session tray/toast helper (the service itself
-can't draw UI — see below). See `specs.md` section 10 for the phase plan.
+**Phase 3 — Azure Storage: core done.** The agent can pull its config from
+`<device>/config.yaml` and upload events as deltas to the append blob
+`<device>/events/<date>.jsonl` (credential read from a bootstrap secret file).
+Verified live against a real storage account. Set `Agent:UseAzure=true`,
+`Agent:Device=<container>`, and `Agent:SecretFile=<path>` to enable it.
+
+Still pending: the lifecycle retention policy (a management-plane op that needs
+subscription access, not just the key), a rotation-safe agent credential (an
+account-key SAS dies on key rotation — prefer a service principal with
+container-scoped RBAC, or re-mint after rotation), DPAPI-encrypting the secret
+file, and the companion user-session tray/toast helper (the service runs in
+Session 0 and can't draw UI). See `specs.md` section 10.
 
 ## Layout
 

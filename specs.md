@@ -83,7 +83,7 @@ Internal loops (independent `BackgroundService`s or timers):
 - **Activity sampler** — every `activity.sample_minutes`: record the foreground
   app + window title (title, not keystrokes) as a usage sample. Optional
   disclosed screenshots on a separate interval, off by default.
-- **Uploader** — flush queued events to `<device>/<date>/events.jsonl` via append
+- **Uploader** — flush queued events to `<device>/events/<date>.jsonl` via append
   blob; retry with backoff; survive restarts (queue on disk).
 
 ---
@@ -171,13 +171,16 @@ if invalid. Log a `config_rejected` event so you see it in the report.
 ## 6. Log format
 
 **Storage layout (resolved 2026-11-04):** one storage account; **one container
-per device** (named for the device); **one folder per local day** inside it. So:
-`<device>/config.yaml` (config mirror), `<device>/<date>/events.jsonl` (this
-append blob), `<device>/<date>/report.json`, `<device>/<date>/shots/*.png`. The
-day-folders make Azure Storage lifecycle auto-delete trivial (expire by age).
+per device** (named for the device); **type-first prefixes**, each holding one
+blob per local day. So: `<device>/config.yaml` (config mirror),
+`<device>/events/<date>.jsonl` (this append blob), `<device>/reports/<date>.json`,
+`<device>/shots/<date>/*.png`. Type-first (not day-first) because Azure Storage
+lifecycle rules filter by path **prefix** only, so per-type retention ages
+(events 90d, shots 30d, reports 365d) need `events/`, `shots/`, `reports/` as
+stable prefixes. (Decided 2026-11-04.)
 
 Raw events are JSON Lines, one append blob per device per local day
-(`<device>/2026-11-04/events.jsonl`). One event per line:
+(`<device>/events/2026-11-04.jsonl`). One event per line:
 
 ```json
 {"ts":"2026-11-03T17:42:10+01:00","dev":"lenovo-mia","type":"app_sample","app":"Roblox","title":"Roblox"}
@@ -200,7 +203,7 @@ Append blobs cap at 50k blocks; a new day = a new blob, so that's a non-issue.
 API (decided 2026-11-04).
 
 - **Timer function** (hourly + end-of-day): read today's raw `.jsonl` for each
-  device, aggregate into `<device>/<date>/report.json`:
+  device, aggregate into `<device>/reports/<date>.json`:
   - per-app minutes used vs limit, warn/kill events,
   - top domains, denied attempts (count + which),
   - timeline of activity samples,
@@ -268,11 +271,16 @@ auth so only you can open it.
 2. **DNS:** in-process .NET resolver **library** (e.g. `ARSoft.Tools.Net`), no
    external daemon.
 3. **Reports API:** C# on **.NET 10** isolated Functions — one language end to end.
-4. **Storage:** one account; **one container per device**; **one folder per day**
-   inside each.
-5. **Retention:** Azure Storage lifecycle auto-delete — logs 90d, screenshots
-   30d, reports 365d (tunable).
+4. **Storage:** one account; **one container per device**; **type-first prefixes**
+   (`events/`, `reports/`, `shots/`), each with one blob per day. (Revised from
+   "folder per day" on 2026-11-04 so lifecycle prefix rules can set per-type ages.)
+5. **Retention:** Azure Storage lifecycle auto-delete — events 90d, shots 30d,
+   reports 365d (tunable).
 6. **Screenshots:** build the capability but ship it **OFF** for v0;
    disclosed-only; interval `fixed` or `random` (jittered) per config.
+
+Azure placement (2026-11-04): **NOT** on any BeAI company subscription — this is
+a personal tool holding a minor's data. Use a personal Azure account; region
+West Europe; redundancy LRS.
 
 Naming: folder `pc-kid-watch`, repo/remote `kid-watch` — left as-is by choice.

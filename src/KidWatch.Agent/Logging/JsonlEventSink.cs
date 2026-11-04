@@ -27,8 +27,9 @@ public sealed class JsonlEventSink(
     {
         var line = e.ToJsonLine();
         var day = DateTime.Now.ToString("yyyy-MM-dd");
-        var dir = Path.Combine(options.LogDir, config.Device, day);
-        var file = Path.Combine(dir, "events.jsonl");
+        // Type-first layout mirrors the Azure blob prefixes: <device>/events/<date>.jsonl
+        var dir = Path.Combine(options.LogDir, config.Device, "events");
+        var file = Path.Combine(dir, day + ".jsonl");
 
         await _writeLock.WaitAsync(ct);
         try

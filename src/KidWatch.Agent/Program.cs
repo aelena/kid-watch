@@ -1,4 +1,5 @@
 using KidWatch.Agent;
+using KidWatch.Agent.Azure;
 using KidWatch.Agent.Configuration;
 using KidWatch.Agent.Counters;
 using KidWatch.Agent.Enforcement;
@@ -19,9 +20,20 @@ Directory.CreateDirectory(options.DataDir);
 builder.Services.AddSingleton(options);
 
 builder.Services.AddSingleton<IConfigStore, ConfigStore>();
-builder.Services.AddSingleton<IConfigSource, LocalFileConfigSource>();
 builder.Services.AddSingleton<ICounterStore, SqliteCounterStore>();
 builder.Services.AddSingleton<IEventSink, JsonlEventSink>();
+
+// Config comes from Azure (download <device>/config.yaml) or a local file (dev).
+if (options.UseAzure)
+{
+    builder.Services.AddSingleton<AzureStorage>();
+    builder.Services.AddSingleton<IConfigSource, AzureBlobConfigSource>();
+    builder.Services.AddHostedService<AzureAppendUploader>();
+}
+else
+{
+    builder.Services.AddSingleton<IConfigSource, LocalFileConfigSource>();
+}
 builder.Services.AddSingleton<IClock, SystemClock>();
 builder.Services.AddSingleton<IProcessProbe, WindowsProcessProbe>();
 builder.Services.AddSingleton<INotifier, LoggingNotifier>();
